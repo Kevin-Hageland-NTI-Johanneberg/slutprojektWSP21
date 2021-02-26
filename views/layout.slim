@@ -5,6 +5,15 @@ html lang="en"
         meta name="viewport" content="width=device-width, initial-scale=1.0"/
         title Online Investor
     body
-        header Online Investor
-        
+        header 
+            h1 Online Investor
+        nav
+            a href="/browse" Browse
+            - if session[:id] == nil
+                a href="/" Log in / Register
+            - else
+                a href="/business/#{session[:id]}" Business 
+                / Länka via business till users db ^^
+                a href="/account/#{session[:id]}" #{session[:username]}
+    
         == yield
