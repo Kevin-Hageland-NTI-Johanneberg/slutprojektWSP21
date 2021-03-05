@@ -3,4 +3,4 @@ require 'slim'
 require 'sqlite3'
 require 'bcrypt'
 require './app.rb'
-
+require 'byebug'
