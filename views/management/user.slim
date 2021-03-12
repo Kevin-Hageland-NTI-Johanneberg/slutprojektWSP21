@@ -1,0 +1,15 @@
+h2 #{session[:username]}
+
+h3 Change username:
+form action="/change_username/#{session[:id]}" method="POST"
+    input type="text" name="username" placeholder="Enter new username"
+    input type="submit" value="Submit!"
+
+h3 Change password:
+form action="/change_password/#{session[:id]}" method="POST"
+    input type="password" name="old_password" placeholder="Enter old password"
+    input type="password" name="password" placeholder="Enter new password"
+    input type="password" name="password_confirm" placeholder="Enter your new password again"
+    input type="submit" value="Submit!"
+
+h3 #{session[:username]}

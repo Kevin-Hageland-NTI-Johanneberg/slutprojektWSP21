@@ -60,14 +60,15 @@ get('/browse') do
     slim(:"posts/index")
 end
 
-get('/businesses') do
+get('/business/:id') do
   id = session[:id].to_i
   db = SQLite3::Database.new('db/online-investor.db')
   db.results_as_hash = true
 
-  result = db.execute("SELECT
-    users.id,
-    businesses.name
-  FROM (user_to_business
-    INNER JOIN")
+  result = db.execute("SELECT businesses.name
+    FROM (user_to_business 
+      INNER JOIN users ON user_to_business.user_id = users.id)
+      WHERE users.id = ?", id) # "businesses.name doesn't exist" ??????
+  p result
+  slim(:"management/businesses")
 end

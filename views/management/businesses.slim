@@ -1,3 +1,3 @@
-select name="business"
-    - 
-        option value=""
+select name="Business"
+    - session[:business_list].each do |business|
+        option value=business

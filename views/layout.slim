@@ -12,8 +12,7 @@ html lang="en"
             - if session[:id] == nil
                 a href="/" Log in / Register
             - else
-                a href="/business/#{session[:id]}" Business 
-                / Länka via business till users db ^^
+                a href="/business/#{session[:id]}" Businesses 
                 a href="/account/#{session[:id]}" #{session[:username]}
     
         == yield
