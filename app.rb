@@ -66,9 +66,25 @@ get('/business/:id') do
   db.results_as_hash = true
 
   result = db.execute("SELECT businesses.name
-    FROM (user_to_business 
-      INNER JOIN users ON user_to_business.user_id = users.id)
-      WHERE users.id = ?", id) # "businesses.name doesn't exist" ??????
-  p result
+  FROM ((user_to_business 
+    INNER JOIN users ON user_to_business.user_id = users.id)
+    INNER JOIN businesses ON user_to_business.user_id = user_id)
+    WHERE users.id = 1", id) #range error
+  session[:businesses] = result
   slim(:"management/businesses")
+end
+
+get('/account/:id') do
+  slim(:"management/user")
+end
+
+post('/add_money') do #business id, look how
+  id = session[:id].to_i
+  money_to_add = params[:money_to_add].to_i
+  user_money = db.execute('SELECT money FROM users WHERE id = ?', id)
+  if user_money > money_to_add
+    current_money = db.execute('SELECT money FROM businesses WHERE id = ?', business_id)
+  else
+    print "Oops, something went wrong!"
+  end
 end

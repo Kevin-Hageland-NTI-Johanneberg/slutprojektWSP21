@@ -12,4 +12,13 @@ form action="/change_password/#{session[:id]}" method="POST"
     input type="password" name="password_confirm" placeholder="Enter your new password again"
     input type="submit" value="Submit!"
 
-h3 #{session[:username]}
+h3 #{session[:username]}'s businesses: 
+    - session[:businesses].each do |business|
+        p = business["name"]
+        p = business["money"]
+        form action="/add_money/#{business["id"]}" method="POST"
+            input type="text" name="money_to_add" placeholder="Enter the amount to add."
+            input type="submit" value="Add money!"
+        form action="/leave/#{business["id"]}" method="POST"
+            input type="submit" value="Leave business."
+
