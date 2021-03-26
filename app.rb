@@ -65,17 +65,26 @@ get('/business/:id') do
   db = SQLite3::Database.new('db/online-investor.db')
   db.results_as_hash = true
 
-  result = db.execute("SELECT businesses.name
+  business = db.execute("SELECT businesses.name
   FROM ((user_to_business 
     INNER JOIN users ON user_to_business.user_id = users.id)
     INNER JOIN businesses ON user_to_business.user_id = user_id)
-    WHERE users.id = 1", id) #range error
-  session[:businesses] = result
+    WHERE users.id = ?", id) #range error
+  session[:businesses] = business
   slim(:"management/businesses")
 end
 
 get('/account/:id') do
-  slim(:"management/user")
+  id = session[:id].to_i
+  db = SQLite3::Database.new('db/online-investor.db')
+  db.results_as_hash = true
+
+  business = db.execute("SELECT businesses.id, businesses.name, businesses.money
+  FROM ((user_to_business 
+    INNER JOIN users ON user_to_business.user_id = users.id)
+    INNER JOIN businesses ON user_to_business.user_id = user_id)
+    WHERE users.id = ?", id) #range error
+  slim(:"management/user", locals:{businesses:business})
 end
 
 post('/add_money') do #business id, look how

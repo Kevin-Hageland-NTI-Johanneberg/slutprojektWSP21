@@ -13,7 +13,7 @@ form action="/change_password/#{session[:id]}" method="POST"
     input type="submit" value="Submit!"
 
 h3 #{session[:username]}'s businesses: 
-    - session[:businesses].each do |business|
+    - business.each do |business|
         p = business["name"]
         p = business["money"]
         form action="/add_money/#{business["id"]}" method="POST"
