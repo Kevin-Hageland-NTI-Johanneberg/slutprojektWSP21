@@ -47,7 +47,7 @@ post('/register') do
     db.results_as_hash = true
     db.execute("INSERT INTO users (username,pwdigest,money) VALUES (?,?,0)", username, password_digest)
     result = db.execute("SELECT * FROM users WHERE username = ?", username).first
-    id = result['id'] # Hör med emil varför detta ger error???
+    id = result['id']
     session[:username] = username
     session[:id] = id
     redirect("/browse")
@@ -69,9 +69,8 @@ get('/business/:id') do
   FROM ((user_to_business 
     INNER JOIN users ON user_to_business.user_id = users.id)
     INNER JOIN businesses ON user_to_business.user_id = user_id)
-    WHERE users.id = ?", id) #range error
-  session[:businesses] = business
-  slim(:"management/businesses")
+    WHERE users.id = ?", id)
+  slim(:"management/businesses", locals:{business:business})
 end
 
 get('/account/:id') do
@@ -83,11 +82,11 @@ get('/account/:id') do
   FROM ((user_to_business 
     INNER JOIN users ON user_to_business.user_id = users.id)
     INNER JOIN businesses ON user_to_business.user_id = user_id)
-    WHERE users.id = ?", id) #range error
-  slim(:"management/user", locals:{businesses:business})
+    WHERE users.id = ?", id)
+  slim(:"management/user", locals:{business:business})
 end
 
-post('/add_money') do #business id, look how
+post('/add_money/') do #business id, ask emil
   id = session[:id].to_i
   money_to_add = params[:money_to_add].to_i
   user_money = db.execute('SELECT money FROM users WHERE id = ?', id)
@@ -97,3 +96,6 @@ post('/add_money') do #business id, look how
     print "Oops, something went wrong!"
   end
 end
+
+post('/create post') do
+  slim(:"/management/new_post")

@@ -1,3 +1,10 @@
-select name="Business"
-    - session[:businesses].each do |business|
-        option value=business
+h2 Businesses
+
+h3 Your businesses: 
+
+select name="business_selected"
+    - business.each do |business|
+        option value="#{business["id"]}"#{business["name"]}
+
+form action="/create post" method="GET" 
+    input type="submit" name="new_post_button" value="Publish a new post!!"
