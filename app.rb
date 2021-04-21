@@ -100,3 +100,4 @@ end
 
 post('/create post') do
   slim(:"/management/new_post")
+end
