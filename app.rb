@@ -41,6 +41,7 @@ post('/register') do
   username = params[:username]
   password = params[:password]
   password_confirm = params[:password_confirm]
+ 
   if (password == password_confirm) #lägg till användare
     password_digest = BCrypt::Password.create(password)
     db = SQLite3::Database.new('db/online-investor.db')
