@@ -15,8 +15,8 @@ form action="/change_password/#{session[:id]}" method="POST"
 h3 #{session[:username]}'s businesses: 
     
 - business.each do |business|
-    p = business["name"]
-    p = business["money"]
+    p = "Name: #{business["name"]}"
+    p = "Budget: $#{business["money"]}"
     form action="/add_money/#{business["id"]}" method="POST"
         input type="text" name="money_to_add" placeholder="Enter the amount to add."
         input type="submit" value="Add money!"
