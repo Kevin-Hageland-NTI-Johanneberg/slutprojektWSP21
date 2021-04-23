@@ -12,6 +12,11 @@ form action="/change_password/#{session[:id]}" method="POST"
     input type="password" name="password_confirm" placeholder="Enter your new password again"
     input type="submit" value="Submit!"
 
+h3 Add money to account:
+form action="/add_account_money/#{session[:id]}" method="POST"
+    input type="text" name="money_to_add" placeholder="Enter amount to add"
+    input type="submit" value="Submit!"
+
 h3 #{session[:username]}'s businesses: 
     
 - business.each do |business|

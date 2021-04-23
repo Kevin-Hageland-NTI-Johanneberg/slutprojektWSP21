@@ -78,6 +78,8 @@ get('/account/:id') do
   id = session[:id].to_i
   db = SQLite3::Database.new('db/online-investor.db')
   db.results_as_hash = true
+  username = db.execute("SELECT username FROM users WHERE id = ?", id).first #fix dis
+  session[:username] = username
 
   business = db.execute("SELECT businesses.id, businesses.name, businesses.money
   FROM ((user_to_business 
@@ -87,14 +89,57 @@ get('/account/:id') do
   slim(:"management/user", locals:{business:business})
 end
 
-post('/add_money/') do #business id, ask emil
+post('/change_username/:id') do
   id = session[:id].to_i
+  new_username = params[:username]
+
+  db = SQLite3::Database.new('db/online-investor.db')
+  db.execute("UPDATE users SET username = ? WHERE id = ?", new_username, id)
+  redirect('/account/:id')
+end
+
+post('/change_password/:id') do
+  id = session[:id].to_i
+  password = params[:password]
+  password_confirm = params[:password_confirm]
+
+  if (password == password_confirm) #lägg till användare
+    password_digest = BCrypt::Password.create(password)
+    db = SQLite3::Database.new('db/online-investor.db')
+    db.results_as_hash = true
+    db.execute("UPDATE users SET pwdigest = ? WHERE id = ?", password_digest, id)
+    redirect("/account/:id")
+  else #felhantering
+    "Lösenordet matchade inte!"
+  end
+
+end
+
+post('/add_account_money/:id') do
+  id = session[:id].to_i
+  money_to_add = params[:money_to_add]
+  db = SQLite3::Database.new('db/online-investor.db')
+  current_money = db.execute("SELECT money FROM users WHERE id = ?", id).first
+  total_money = current_money + money_to_add
+  db.execute('UPDATE users SET money = ? WHERE id = ?', total_money, id)
+  redirect('/account/:id')
+end
+
+post('/add_money/:id') do
+  id = params[:id].to_i
+  user_id = session[:id]
   money_to_add = params[:money_to_add].to_i
-  user_money = db.execute('SELECT money FROM users WHERE id = ?', id)
+  db = SQLite3::Database.new('db/online-investor.db')
+  user_money = db.execute('SELECT money FROM users WHERE id = ?', user_id).first.first
   if user_money > money_to_add
-    current_money = db.execute('SELECT money FROM businesses WHERE id = ?', business_id)
+    current_money = db.execute("SELECT money FROM businesses WHERE id = ?", id).first.first
+    total_money = current_money + money_to_add
+    user_money -= money_to_add
+    db.execute('UPDATE businesses SET money = ? WHERE id = ?', total_money, id)
+    db.execute('UPDATE users SET money = ? WHERE id = ?', user_money, id)
+    redirect("/account/:id")
   else
-    print "Oops, something went wrong!"
+    "Oops, something went wrong!"
   end
 end
 
