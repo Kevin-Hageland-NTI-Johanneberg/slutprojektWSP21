@@ -1,5 +1,8 @@
 h2 #{session[:username]}
 
+form action="/logout" method="GET"
+    input type="submit" value="Logout"
+
 h3 Change username:
 form action="/change_username/#{session[:id]}" method="POST"
     input type="text" name="username" placeholder="Enter new username"
@@ -12,7 +15,8 @@ form action="/change_password/#{session[:id]}" method="POST"
     input type="password" name="password_confirm" placeholder="Enter your new password again"
     input type="submit" value="Submit!"
 
-h3 Add money to account:
+h3 Account money:
+p = "Current account balance: $#{session[:money]}"
 form action="/add_account_money/#{session[:id]}" method="POST"
     input type="text" name="money_to_add" placeholder="Enter amount to add"
     input type="submit" value="Submit!"
@@ -27,4 +31,15 @@ h3 #{session[:username]}'s businesses:
         input type="submit" value="Add money!"
     form action="/leave/#{business["id"]}" method="POST"
         input type="submit" value="Leave business."
+    p __________________
 
+p Join a business: 
+form action="/join_business" method="POST"
+    input type="text" name="business_name" placeholder="Enter the name of the existing business"
+    input type="submit" value="Join business!"
+
+p Create a new business:
+form action="/create_business" method="POST"
+    input type="text" name="business_name" placeholder="Name of the business"
+    input type="text" name="starting_budget" placeholder="Enter a starting budget"
+    input type="submit" value="Create business!"
