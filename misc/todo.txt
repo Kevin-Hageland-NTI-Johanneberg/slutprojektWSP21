@@ -1,0 +1,20 @@
+Betyg:D	
+Förslag komplettering (C<):Dokumentation: 
+Yardoc (B/A)samt mer detaljer beskrivning av arkitektur i projektplan.md. https://classroom.google.com/u/0/c/MTQ3NDUxMjkyODEz/m/MzIzNzYzODU0MjAz/details
+Fortsätt din wiki under kompl. 
+Finlipa Rest (nu har du mpnga routes om slutar med /:id, men där params[:id] inte används (du hämtar id från session istället). 
+Försök separera din kod, mer DRY genom tex before-block som kollar om man är inloggad elller funktion som löser databasuppkoppling. 
+Fuktionalitet: Färdigställ CRUD-funktionalitet enligt plan. Tänk på ON DELETE CASCADE då ngt tas bort som har relationer i till flera tabeller (ta bort i alla eller ersätt med tex "deleted user"). 
+Säkerhet: Validera indata. Säkra att användare äger resurser (kontrollera inkoggad med resursens id om man updaterar(ta bort eller visar). Cool down (för B/A) https://classroom.google.com/u/0/c/MTQ3NDUxMjkyODEz/m/MTQ3NDU1NzA2OTQz/details
+
+
+Ordning:
+Bättre beskrivning av arkitektur i projektplan.md.
+Arkitektur. (SLIM-filer antar jag)
+DELETE funktion inom flera databaser
+
+
+
+Bygga klart resten av sidan.
+
+kika bedömningsdokument

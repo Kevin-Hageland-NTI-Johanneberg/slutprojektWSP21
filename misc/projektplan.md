@@ -14,6 +14,8 @@ Jag ska skapa en "Investeringssida" där man som företag kan köpa upp idéer f
 
 ## 4. Arkitektur (Beskriv filer och mappar - vad gör/innehåller de?).
 
+Generell struktur:
+
 db <!-- databas map -->
     databas-fil.db
 misc
@@ -27,3 +29,8 @@ public
 views
     slimfiler-för-alla-sidor
 app.rb
+model.rb
+
+-------
+
+Skriva förklaring
