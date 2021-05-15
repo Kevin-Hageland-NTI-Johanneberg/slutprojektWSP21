@@ -1,6 +1,6 @@
 h2 Create a new post
 
-form action="/create_post" method="POST"
+form action="/create_post/#{session[:business_id]}" method="POST"
     label Title:<br />
     input type="text" name="title"<br /><br />
     label Pictures:<br />

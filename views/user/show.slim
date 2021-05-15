@@ -3,6 +3,9 @@ h2 #{session[:username]}
 form action="/logout" method="GET"
     input type="submit" value="Logout"
 
+form action="/user/#{session[:id]}/delete" method="POST"
+    input type="submit" value="Delete account"
+
 h3 Change username:
 form action="/change_username/#{session[:id]}" method="POST"
     input type="text" name="username" placeholder="Enter new username"
@@ -34,12 +37,12 @@ h3 #{session[:username]}'s businesses:
     p __________________
 
 p Join a business: 
-form action="/join_business" method="POST"
+form action="/join_business/#{session[:id]}" method="POST"
     input type="text" name="business_name" placeholder="Enter the name of the existing business"
     input type="submit" value="Join business!"
 
 p Create a new business:
-form action="/create_business" method="POST"
+form action="/create_business/#{session[:id]" method="POST"
     input type="text" name="business_name" placeholder="Name of the business"
     input type="text" name="starting_budget" placeholder="Enter a starting budget"
     input type="submit" value="Create business!"
