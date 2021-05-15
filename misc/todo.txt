@@ -8,15 +8,28 @@ Försök separera din kod, mer DRY genom tex before-block som kollar om man är 
 
 Fuktionalitet: Färdigställ CRUD-funktionalitet enligt plan. Tänk på ON DELETE CASCADE då ngt tas bort som har relationer i till flera tabeller (ta bort i alla eller ersätt med tex "deleted user"). 
 
-Säkerhet: Validera indata. Säkra att användare äger resurser (kontrollera inkoggad med resursens id om man updaterar(ta bort eller visar). Cool down (för B/A) https://classroom.google.com/u/0/c/MTQ3NDUxMjkyODEz/m/MTQ3NDU1NzA2OTQz/details
+Validera indata och errormeddelande med sessions (kolla exempelkoden i yardoc)
+
+Säkra att användare äger resurser (kontrollera inkoggad med resursens id om man updaterar(ta bort eller visar). Cool down (för B/A) https://classroom.google.com/u/0/c/MTQ3NDUxMjkyODEz/m/MTQ3NDU1NzA2OTQz/details
 
 
-Ordning:
-DELETE funktion inom flera databaser (delete a user)
-Lägg in update saker inom nya typ users i nya slim filer
-Sessions with error messages (i model och app)
+Några frågor som uppstått under dagen är:
 
+Varför fungerar inte min module jag försöker skapa med yardoc? - Leder dessutom till att jag inte kan köra koden?
+Bör publik filerna (css och js) placeras inom views?
+Bör model.rb ha sin egna map (model) samt ifall något annat i sådana fall bör ingå i den mappen?
+Jag påbörjade delete cascade, men hittade ingen bra källa på hur man använder det, vet bara hur jag "manuellt" tar bort ett element ur flera tabeller.
 
-Bygga klart resten av sidan.
+Fokus på nästa gång:
+
+Lösa de problem som uppstått idag, se ovan.
+Varför fungerar inte id't i routen under /business/:id.
+Felhantering med sessions. Därmed även validera indata.
+Kod som följer DRY, med before-block.
+Cool down.
+Extra förbättringar:
+
+Lägga updates (såsom uppdatera användarnamn) som en egen slimfil som följer restful routes.
+Bygga klart sidan med articles under browse som använder datan från posts-table.
 
 kika bedömningsdokument
