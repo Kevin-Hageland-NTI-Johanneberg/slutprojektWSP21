@@ -23,11 +23,12 @@ misc
     projectplan
     README.md
     (övriga filer)
-public
-    css
-    js
 views
-    .slim sidor
+    public
+        css
+        js
+    slim-map-eller-delsida
+        .slim-filer-enligt-REST
 app.rb
 model.rb
 

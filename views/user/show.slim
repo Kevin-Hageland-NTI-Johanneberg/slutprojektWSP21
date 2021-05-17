@@ -1,4 +1,7 @@
-h2 #{session[:username]}
+- if session[:admin] == true 
+    h2 #{session[:username]} - Admin
+- else
+    h2 #{session[:username]}
 
 form action="/logout" method="GET"
     input type="submit" value="Logout"
@@ -6,13 +9,19 @@ form action="/logout" method="GET"
 form action="/user/#{session[:id]}/delete" method="POST"
     input type="submit" value="Delete account"
 
+- if session[:admin] == true 
+    h3 Make new Admin:
+    form action="/make_admin" method="POST"
+        input type="text" name="username" placeholder="Enter username here"
+        input type="submit" value="Make Admin!"
+
 h3 Change username:
-form action="/change_username/#{session[:id]}" method="POST"
+form action="/change_username/#{session[:id]}/update" method="POST"
     input type="text" name="username" placeholder="Enter new username"
     input type="submit" value="Submit!"
 
 h3 Change password:
-form action="/change_password/#{session[:id]}" method="POST"
+form action="/change_password/#{session[:id]}/update" method="POST"
     input type="password" name="old_password" placeholder="Enter old password"
     input type="password" name="password" placeholder="Enter new password"
     input type="password" name="password_confirm" placeholder="Enter your new password again"
@@ -20,7 +29,7 @@ form action="/change_password/#{session[:id]}" method="POST"
 
 h3 Account money:
 p = "Current account balance: $#{session[:money]}"
-form action="/add_account_money/#{session[:id]}" method="POST"
+form action="/add_account_money/#{session[:id]}/update" method="POST"
     input type="text" name="money_to_add" placeholder="Enter amount to add"
     input type="submit" value="Submit!"
 
@@ -29,20 +38,20 @@ h3 #{session[:username]}'s businesses:
 - business.each do |business|
     p = "Name: #{business["name"]}"
     p = "Budget: $#{business["money"]}"
-    form action="/add_money/#{business["id"]}" method="POST"
+    form action="/add_money/#{business["id"]}/update" method="POST"
         input type="text" name="money_to_add" placeholder="Enter the amount to add."
         input type="submit" value="Add money!"
-    form action="/leave/#{business["id"]}" method="POST"
+    form action="/leave/#{business["id"]}/delete" method="POST"
         input type="submit" value="Leave business."
     p __________________
 
 p Join a business: 
-form action="/join_business/#{session[:id]}" method="POST"
+form action="/join_business/#{session[:id]}/update" method="POST"
     input type="text" name="business_name" placeholder="Enter the name of the existing business"
     input type="submit" value="Join business!"
 
 p Create a new business:
-form action="/create_business/#{session[:id]" method="POST"
+form action="/create_business/#{session[:id]}/update" method="POST"
     input type="text" name="business_name" placeholder="Name of the business"
     input type="text" name="starting_budget" placeholder="Enter a starting budget"
     input type="submit" value="Create business!"

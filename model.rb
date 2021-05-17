@@ -5,19 +5,26 @@ require 'bcrypt'
 require './app.rb'
 require 'byebug'
 
-
-module Model
+# module Model
+    
+    # Retrieves the database
+    #
+    # @param [String] db, the database path
+    # 
+    # @return [SQLite3::Database] the database
+    def connect_to_db(db)
+        return SQLite3::Database.new(db)
+    end
     
     # Tries to log in the user
     #
     # @param [String] username, the username
     # @param [String] password, tha password
+    # @see Model#connect_to_db
     #
-    # @return [Hash]
-    #   * :error [Boolean] whether an error occured
-    #   * :message [String] the error message
+    # @return [Boolean] true/false
     def logged_in?(username, password)
-        db = SQLite3::Database.new('db/online-investor.db')
+        db = connect_to_db('db/online-investor.db')
         db.results_as_hash = true
         result = db.execute('SELECT * FROM users WHERE username = ?', username).first
         pwdigest = result['pwdigest']
@@ -28,6 +35,12 @@ module Model
             session[:username] = username
             business_id = db.execute("SELECT business_id FROM user_to_business WHERE user_id = ?", id).first
             session[:business_id] = business_id["business_id"]
+            
+            admin_id = db.execute("SELECT admin_id FROM admins WHERE user_id = ?", id).first
+            if admin_id != nil
+                session[:admin] = true
+            end
+
             return true
         else
             return false
@@ -38,13 +51,10 @@ module Model
     #
     # @param [String] username, the username
     # @param [String] password, the password
-    #
-    # @return [Hash]
-        #   * :error [Boolean] whether an error occured
-        #   * :message [String] the error message
+    # @see Model#connect_to_db
     def register_user(username, password)
         password_digest = BCrypt::Password.create(password)
-        db = SQLite3::Database.new('db/online-investor.db')
+        db = connect_to_db('db/online-investor.db')
         db.results_as_hash = true
         db.execute("INSERT INTO users (username,pwdigest,money) VALUES (?,?,0)", username, password_digest)
         result = db.execute("SELECT * FROM users WHERE username = ?", username).first
@@ -58,13 +68,14 @@ module Model
     # The names from the businesses of current user
     #
     # @param [Integer] id, the id of the current user
+    # @see Model#connect_to_db
     #
     # @return [Hash] containing the business data 
     def get_businesses_from_user(id)
-        db = SQLite3::Database.new('db/online-investor.db')
+        db = connect_to_db('db/online-investor.db')
         db.results_as_hash = true
     
-        business = db.execute("SELECT businesses.name
+        business = db.execute("SELECT businesses.id, businesses.name, businesses.money
         FROM (user_to_business 
         INNER JOIN businesses ON user_to_business.business_id = businesses.id)
         WHERE user_id = ?", id) # if this fucked up, return it by yoinking the code 2 rows below
@@ -79,24 +90,21 @@ module Model
     # @param [String] body, the description of the invention
     # @param [Integer] money_offer, the amount of money the user wants
     # @param [Integer] percent_offer, the percentage the user gives to the buyer for that money
-    #
-    # @return [Hash]
-        #   * :error [Boolean] whether an error occured
-        #   * :message [String] the error message
+    # @see Model#connect_to_db
     def create_post(business_id, title, picture, body, money_offer, percent_offer)
-        db = SQLite3::Database.new('db/online-investor.db')
+        db = connect_to_db('db/online-investor.db')
         db.execute("INSERT INTO posts (business_id, title, picture, content, money_offer, percent_offer) VALUES (?, ?, ?, ?, ?, ?)", business_id, title, picture, body, money_offer, percent_offer)  
         return
     end
 
     # The id, name and money data from the businesses of current user
     #
-    # @param [String] username, the username
-    # @param [String] password, the password
+    # @param [Integer] id, the id of the business
+    # @see Model#connect_to_db
     #
     # @return [Hash] containing the business data 
     def get_user_business_data(id)
-        db = SQLite3::Database.new('db/online-investor.db')
+        db = connect_to_db('db/online-investor.db')
         db.results_as_hash = true
         user_data = db.execute("SELECT * FROM users WHERE id = ?", id).first
         session[:username] = user_data["username"]
@@ -109,16 +117,35 @@ module Model
         return business
     end
 
+    # Puts in the new username as admin in the admins table
+    #
+    # @param [String] username, the username of the new admin
+    # 
+    # @return [String] of the outcome
+    def make_admin(username)
+        db = connect_to_db('db/online-investor.db')
+
+        user_id = db.execute("SELECT id FROM users WHERE username = ?", username).first
+        potential_admin = db.execute("SELECT admin_id FROM admins WHERE user_id = ?", user_id).first
+        if user_id != nil
+            if potential_admin == nil
+                db.execute("INSERT INTO admins (user_id) VALUES (?)", user_id)
+                return "success"
+            else
+                return "already_exists"
+            end
+        else
+            return "not_found"
+        end
+    end
+
     # Changes the username of the user by updating the database
     #
     # @param [Integer] id, the id of the current user
     # @param [String] username, the username the user wants to swap to
-    #
-    # @return [Hash]
-        #   * :error [Boolean] whether an error occured
-        #   * :message [String] the error message
+    # @see Model#connect_to_db
     def change_username(id, username)
-        db = SQLite3::Database.new('db/online-investor.db')
+        db = connect_to_db('db/online-investor.db')
         db.execute("UPDATE users SET username = ? WHERE id = ?", username, id).first
         return
     end
@@ -127,13 +154,10 @@ module Model
     #
     # @param [Integer] id, the id of the current user
     # @param [String] password, the password the user wants to swap to
-    #
-    # @return [Hash]
-        #   * :error [Boolean] whether an error occured
-        #   * :message [String] the error message
+    # @see Model#connect_to_db
     def change_password(id, password)
         password_digest = BCrypt::Password.create(password)
-        db = SQLite3::Database.new('db/online-investor.db')
+        db = connect_to_db('db/online-investor.db')
         db.results_as_hash = true
         db.execute("UPDATE users SET pwdigest = ? WHERE id = ?", password_digest, id)
         return
@@ -143,10 +167,11 @@ module Model
     #
     # @param [Integer] id, the id of the current user
     # @param [Integer] money, the money the user want to add
+    # @see Model#connect_to_db
     #
     # @return [Integer] of the users money
         def account_money(id)
-            db = SQLite3::Database.new('db/online-investor.db')
+            db = connect_to_db('db/online-investor.db')
             user_money = db.execute('SELECT money FROM users WHERE id = ?', user_id).first.first
             return user_money
         end      
@@ -156,12 +181,9 @@ module Model
     # @param [Integer] id, the id of the current user
     # @param [Integer] money, the money the user want to add
     # @see Model#account_money
-    #
-    # @return [Hash]
-        #   * :error [Boolean] whether an error occured
-        #   * :message [String] the error message
+    # @see Model#connect_to_db
     def add_account_money(id, money)
-        db = SQLite3::Database.new('db/online-investor.db')
+        db = connect_to_db('db/online-investor.db')
         current_money = account_money(id)
         total_money = current_money + money
         db.execute('UPDATE users SET money = ? WHERE id = ?', total_money, id)  
@@ -174,11 +196,9 @@ module Model
     # @param [Integer] user_id, the id of the current user
     # @param [Integer] money_to_add, the money the user want to add
     # @see Model#account_money
-    #
-    # @return [Hash]
-        #   * :error [Boolean] whether an error occured
-        #   * :message [String] the error message
+    # @see Model#connect_to_db
     def add_business_money(business_id, user_id, money_to_add)
+        db = connect_to_db('db/online-investor.db')
         current_money = db.execute("SELECT money FROM businesses WHERE id = ?", business_id).first.first
         total_money = current_money + money_to_add
         user_money = account_money(user_id)
@@ -192,12 +212,9 @@ module Model
     #
     # @param [Integer] business_id, the id of the business
     # @param [Integer] user_id, the id of the current user
-    #
-    # @return [Hash]
-        #   * :error [Boolean] whether an error occured
-        #   * :message [String] the error message
+    # @see Model#connect_to_db
     def leave_business(user_id, business_id)
-        db = SQLite3::Database.new('db/online-investor.db')
+        db = connect_to_db('db/online-investor.db')
         db.execute("DELETE FROM user_to_business WHERE business_id = ? AND user_id = ?", business_id, user_id).first
         return
     end  
@@ -206,16 +223,24 @@ module Model
     #
     # @param [Integer] id, the id of the current user
     # @param [String] business_name, the name of the business the user wants to join
+    # @see Model#connect_to_db
     #
-    # @return [Hash]
-        #   * :error [Boolean] whether an error occured
-        #   * :message [String] the error message
+    # @return [Hash]:
+    #   * :error [Boolean] whether an error occured
+    #   * :message [String] the error message
+    #
+    # ^^ I only did this once due to how I didn't want to redo most of my routes, but to show I'm capable
     def join_business(id, business_name)
-        db = SQLite3::Database.new('db/online-investor.db')
-        business_id = db.execute("SELECT id FROM businesses WHERE name = ?", business_name) # fixa felhantering
-        db.execute("INSERT INTO user_to_business (user_id, business_id) VALUES (?, ?)", id, business_id)
-        session[:business_id] = db.execute("SELECT business_id FROM user_to_business WHERE user_id = ?", id).first.first
-        return true
+        db = connect_to_db('db/online-investor.db')
+        business_id = db.execute("SELECT id FROM businesses WHERE name = ?", business_name).first
+        p business_id
+        if business_id != nil
+            db.execute("INSERT INTO user_to_business (user_id, business_id) VALUES (?, ?)", id, business_id)
+            session[:business_id] = db.execute("SELECT business_id FROM user_to_business WHERE user_id = ?", id).first.first
+            return {:error => false}
+        else
+            return {:error => true, :message => "There's no business with this name."}
+        end
     end
 
     # User creates a business by inserting data into business table and user_to_business
@@ -224,12 +249,9 @@ module Model
     # @param [Integer] user_money, the balance of the user
     # @param [String] name, the name of the business
     # @param [Integer] budget, the starting budget of the business
-    #
-    # @return [Hash]
-        #   * :error [Boolean] whether an error occured
-        #   * :message [String] the error message
+    # @see Model#connect_to_db
     def create_business(user_id, user_money, name, budget)
-        db = SQLite3::Database.new('db/online-investor.db')
+        db = connect_to_db('db/online-investor.db')
         user_money -= starting_budget
         db.execute('UPDATE users SET money = ? WHERE id = ?', user_money, user_id)
 
@@ -243,14 +265,11 @@ module Model
     # Delete a user by removing them from multiple tables
     #
     # @param [Integer] id, the id of the current user
-    #
-    # @return [Hash]
-        #   * :error [Boolean] whether an error occured
-        #   * :message [String] the error message
+    # @see Model#connect_to_db
     def delete_user(id)
-        db = SQLite3::Database.new('db/online-investor.db')
+        db = connect_to_db('db/online-investor.db')
         db.execute('DELETE FROM users WHERE id = ?', id)
         session[:id] = nil
         return
     end
-end
+# end

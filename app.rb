@@ -7,7 +7,38 @@ require 'byebug'
 
 enable :sessions
 
-include Model # why you not work huh
+# include Model # why you not work huh
+
+# Error messages:
+not_logged_in_error = "You need to be logged in to see this."
+wrong_password = "Wrong password. >:("
+not_matching = "Passwords didn't match!"
+data_error = "You've not entered the correct data, check if:\nYou've entered data in every field.\nEntered correct data type."
+not_enough_money = "You don't have that amount of money on your account."
+business_not_found = "There's no business with this name."
+user_not_found = "There's no user with that name."
+already_admin = "The user is already an Admin."
+no_access = "You don't have access to this data."
+
+before do
+  if request.path_info != "/"  && request.path_info != "/register" && request.path_info != "/login" && request.path_info != "/browse" && request.path_info != "/error" && session[:id] == nil 
+    session[:error] = not_logged_in_error
+    redirect("/error")
+  end
+  # Försöker förhindra att man kan gå in på någon annans account när man väl är inloggad:
+  # if params[:id] != session[:id] && params[:id] != nil
+  #   session[:error] = no_access
+  #   redirect("/error")
+  # end
+end
+
+# Displays the error
+#
+# @session [String] error, the error message that should be displayed
+get("/error") do
+  error = session[:error]
+  slim(:error, locals:{error:error})
+end
 
 # Display the home page to log in or register
 #
@@ -32,7 +63,8 @@ post('/login') do
     if logged_in?(username, password) == true
       redirect('/browse/')
     else
-      "Fel lösenord >:(" # Gör till en slimfil
+      session[:error] = wrong_password
+      redirect("/error")
     end
 end
 
@@ -53,11 +85,12 @@ post('/register') do
   password = params[:password]
   password_confirm = params[:password_confirm]
  
-  if password == password_confirm # Felhantera koden
+  if password == password_confirm
     register_user(username, password)
     redirect("/browse/")
-  else #felhantering
-    "Lösenordet matchade inte!"
+  else 
+    session[:error] = not_matching
+    redirect("/error")
   end
 end
 
@@ -77,18 +110,12 @@ get('/business/:id') do # if the user have 0 businesses, make it show another pa
   slim(:"businesses/show", locals:{business:business})
 end
 
-# Refreshing the webpage to show the newly selected business on the businesses webpage by refreshing the business session
-#
-# @param [String] business_selected, a string of the id to store inside the business session
-post('/refresh_businesses') do # can you remove this completely?? since i changed from sessions to params
-  session[:business_id] = params[:business_selected]
-  redirect('/business/:business_id')
-end
-
 # Displays the post creating page
 #
-get('/create_post/:id') do
-  slim(:"posts/new")
+# @params [Integer] business_id, the id of the business that wants to create a new post
+get('/create_post/:id/new') do
+  business_id = params[:business_selected].to_i
+  slim(:"posts/new", locals:{business_id:business_id})
 end
 
 # Creates a new invention post with the following information and then redirects to the the users businesses tab:
@@ -100,15 +127,18 @@ end
 # @param [Integer] money_offer, the amount of money the user wants
 # @param [Integer] percentage_offer, the percentage the user gives to the buyer for that money
 # @see Model#create_post
-post('/create_post/:id') do # fix how picture works
+post('/create_post/:id/update') do # fix how picture works
   business_id = params[:id].to_i
   title = params[:title]
   picture = params[:picture]
-  p picture.class
-  p picture
   body = params[:body]
   money_offer = params[:money_offer].to_i
   percent_offer = params[:percentage_offer].to_i
+
+  if business_id == nil || title == nil || picture == nil || body == nil || money_offer == nil || percent_offer == nil || percent_offer.class == 0 || money_offer == 0
+    session[:error] = data_error
+    redirect("/error")
+  end
 
   create_post(business_id, title, picture, body, money_offer, percent_offer)
   redirect('/business/:business_id')
@@ -128,6 +158,7 @@ end
 #
 get('/logout') do
   session[:id] = nil
+  session[:admin] = nil
   redirect('/')
 end
 
@@ -141,12 +172,32 @@ post('/user/:id/delete') do
   redirect('/')
 end
 
+# Gives other admins the opertunity to make someone else also an admin
+#
+# @session [Integer] :id, the id of the user
+# @param [String] username, the name of the new admin
+# @see Model#make_admin
+post('/make_admin') do
+  id = session[:id].to_i
+  username = params[:username]
+  if make_admin(username) == "already_exists"
+    session[:error] = already_admin
+    redirect("/error")
+  elsif make_admin(username) == "not_found"
+    session[:error] = user_not_found
+    redirect("/error")
+  else
+    redirect("/account/#{id}")
+  end
+end
+
+
 # Allows the user to change its username and redirects back to the account tab
 #
 # @param [Integer] :id, id of the current user
 # @param [String] username, the new username of the user
 # @see Model#change_username
-post('/change_username/:id') do
+post('/change_username/:id/update') do
   id = session[:id].to_i
   new_username = params[:username]
   change_username(id, new_username)
@@ -159,16 +210,17 @@ end
 # @param [String] password, the new non-decrypted password of the user
 # @param [String] username, the new password confirmation of the user
 # @see Model#change_password
-post('/change_password/:id') do
+post('/change_password/:id/update') do
   id = params[:id].to_i
   password = params[:password]
   password_confirm = params[:password_confirm]
 
-  if password == password_confirm # create a helpfunction which is a password check?
+  if password == password_confirm
     change_password(id, password)
     redirect("/account/:id")
-  else #felhantering
-    "Lösenordet matchade inte!" # Samma felhantering som tidigare (SLIM)
+  else 
+    session[:error] = not_matching
+    redirect("/error")
   end
 end
 
@@ -177,9 +229,15 @@ end
 # @param [Integer] :id, id of the current user
 # @param [Integer] money_to_add, the amount of money the user wants to add
 # @see Model#add_account_money
-post('/add_account_money/:id') do
+post('/add_account_money/:id/update') do
   id = session[:id].to_i
   money_to_add = params[:money_to_add].to_i
+
+  if money_to_add <= 0 || money_to_add == nil
+    session[:error] = data_error
+    redirect("/error")
+  end
+
   add_account_money(id, money_to_add)
   redirect('/account/:id')
 end
@@ -191,18 +249,22 @@ end
 # @param [Integer] money_to_add, the amount of money the user wants to add
 # @see Model#account_money
 # @see Model#add_account_money
-post('/add_money/:id') do
+post('/add_money/:id/update') do
   id = params[:id].to_i
   user_id = session[:id]
   user_money = account_money(id)
 
   money_to_add = params[:money_to_add].to_i
-  
-  if user_money > money_to_add
+
+  if money_to_add <= 0 || money_to_add == nil
+    session[:error] = data_error
+    redirect("/error")
+  elsif user_money > money_to_add
     add_account_money(id, money_to_add)
     redirect("/account/:id")
   else
-    "You don't have that amount of money on your bank account" #  Felhantering (SLIM)
+    session[:error] = not_enough_money
+    redirect("/error")
   end
 end
 
@@ -211,7 +273,7 @@ end
 # @param [Integer] :id, id of the business
 # @session [Integer] :id, the id of the current user
 # @see Model#leave_business
-post('/leave/:id') do
+post('/leave/:id/delete') do
   id = params[:id].to_i
   user_id = session[:id]
   leave_business(user_id, id)
@@ -223,13 +285,15 @@ end
 # @param [Integer] :id, the id of the current user
 # @param [String] business_name, the name of the business the user wants to join
 # @see Model#join_business
-post('/join_business/:id') do
+post('/join_business/:id/update') do
   id = params[:id]
   business_name = params[:business_name]
-  if join_business(id, business_name) == true #fixa felhantering
-    redirect('/account/:id')
+  result = join_business(id, business_name)
+  if result[:error] == false
+    redirect("/account/#{id}")
   else
-    "This business doesn't exist"
+    session[:error] = result[:message]
+    redirect("/error")
   end
 end
 
@@ -240,16 +304,23 @@ end
 # @param [Integer] startingh_budget, the starting budget of the business
 # @see Model#account_money
 # @see Model#create_business
-post('/create_business/:id') do
+post('/create_business/:id/update') do
   id = params[:id]
   business_name = params[:business_name]
-  starting_budget = params[:starting_budget].to_i
+
+  if params[:starting_budget] == nil
+    starting_budget = 0
+  else
+    starting_budget = params[:starting_budget].to_i
+  end
+
   user_money = account_money(id)
 
   if user_money > starting_budget
     create_business(id, user_money, business_name, starting_budget)
     redirect('/account/:id')
   else
-    "You don't have enough money on your account for that starting budget :(" # Felhantering med SLIM
+    session[:error] = not_enough_money
+    redirect("/error")
   end
 end

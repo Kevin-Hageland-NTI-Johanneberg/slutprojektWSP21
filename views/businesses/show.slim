@@ -2,11 +2,8 @@ h2 Businesses
 
 h3 Your businesses: 
 
-form action="/refresh_businesses" method="POST"
-    select name="business_selected"
+form action="/create_post/#{session[:business_id]}/new" method="GET" 
+    select name="business_selected" id="business_id"
         - business.each do |business|
             option value="#{business["id"]}"#{business["name"]}
-    input type="submit" value="Update"
-
-form action="/create_post/#{session[:business_id]}" method="GET" 
     input type="submit" value="Publish a new post!!"
