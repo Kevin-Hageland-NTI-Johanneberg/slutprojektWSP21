@@ -1,13 +1,13 @@
 h2 Create a new post
 
 form action="/create_post/#{business_id}/update" method="POST"
-    label Title:<br />
+    label Title:*<br />
     input type="text" name="title"<br /><br />
-    label Pictures:<br />
+    label Pictures:*<br />
     input type="file" name="picture"<br /><br />
-    label Description of your invention and relevant information:<br />
+    label Description of your invention and relevant information:*<br />
     input type="text" name="body"<br /><br />
-    label The amount of money ($) you want for the percentage you offer:<br />
+    label The amount of money ($) you want for the percentage you offer:*<br />
     input type="text" name="money_offer" placeholder="Requested amount" for
     input type="text" name="percent_offer" placeholder="x" %.<br /><br />
     input type="submit" value="Create post!"

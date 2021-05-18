@@ -2,10 +2,6 @@ Yardoc (B/A)samt  https://classroom.google.com/u/0/c/MTQ3NDUxMjkyODEz/m/MzIzNzYz
 
 Fortsätt din wiki under kompl. 
 
-Fuktionalitet: Färdigställ CRUD-funktionalitet enligt plan. Tänk på ON DELETE CASCADE då ngt tas bort som har relationer i till flera tabeller (ta bort i alla eller ersätt med tex "deleted user"). 
-
-Cool down (för B/A)
-
 Bygga klart sidan med articles under browse som använder datan från posts-table.
 
 kika bedömningsdokument

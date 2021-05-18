@@ -5,7 +5,7 @@ require 'bcrypt'
 require './app.rb'
 require 'byebug'
 
-# module Model
+module Model
     
     # Retrieves the database
     #
@@ -20,30 +20,55 @@ require 'byebug'
     #
     # @param [String] username, the username
     # @param [String] password, tha password
+    # @param [Boolean] first_login, keeps track if it's the first login after server has started
+    # @param [Time] cooldown, the time of the last login attempt
     # @see Model#connect_to_db
     #
-    # @return [Boolean] true/false
-    def logged_in?(username, password)
+    # @return [Hash] 
+    #       * :sucess [Boolean/String], if the user succeeded or not
+    #       * :cooldown_timer [Time], the time of the login attempt 
+    def logged_in?(username, password, first_login, cooldown_timer)
+        if first_login == true
+            cooldown_checker = 15
+        else
+            cooldown_checker = Time.now - cooldown_timer
+        end
+        
         db = connect_to_db('db/online-investor.db')
         db.results_as_hash = true
         result = db.execute('SELECT * FROM users WHERE username = ?', username).first
-        pwdigest = result['pwdigest']
-        id = result['id']
-    
-        if BCrypt::Password.new(pwdigest) == password
-            session[:id] = id
-            session[:username] = username
-            business_id = db.execute("SELECT business_id FROM user_to_business WHERE user_id = ?", id).first
-            session[:business_id] = business_id["business_id"]
-            
-            admin_id = db.execute("SELECT admin_id FROM admins WHERE user_id = ?", id).first
-            if admin_id != nil
-                session[:admin] = true
-            end
+        
 
-            return true
+        if result != nil
+            pwdigest = result['pwdigest']
+            id = result['id']
+
+            if BCrypt::Password.new(pwdigest) == password && cooldown_checker >= 15
+                cooldown_time = Time.now
+                cooldown_timer
+                
+                session[:id] = id
+                session[:username] = username
+                business_id = db.execute("SELECT business_id FROM user_to_business WHERE user_id = ?", id).first
+                
+                admin_id = db.execute("SELECT admin_id FROM admins WHERE user_id = ?", id).first
+                if admin_id != nil
+                    session[:admin] = true
+                end
+                return {:success => true, :cooldown_timer => cooldown_time}
+            elsif cooldown_checker < 15
+                cooldown_time = Time.now
+                return {:success => "cooldown", :cooldown_timer => cooldown_time}
+            else
+                cooldown_time = Time.now
+                return {:success => false, :cooldown_timer => cooldown_time}
+            end
+        elsif cooldown_checker < 15
+            cooldown_time = Time.now
+            return {:success => "cooldown", :cooldown_timer => cooldown_time}
         else
-            return false
+            cooldown_time = Time.now
+            return {:success => false, :cooldown_timer => cooldown_time}
         end
     end
 
@@ -163,6 +188,27 @@ require 'byebug'
         return
     end
 
+    # Checking if the password is correct
+    #
+    # @param [Integer] id, the id of the current user
+    # @param [String] password, the password the user entered
+    # @see Model#connect_to_db
+    #
+    # @return [Hash]:
+    #   * :error [Boolean] whether an error occured
+    #   * :message [String] the error message
+    def password_check(id, password)
+        db = connect_to_db('db/online-investor.db')
+        pwdigest = db.execute('SELECT pwdigest FROM users WHERE id = ?', id).first.first
+        p pwdigest
+        if BCrypt::Password.new(pwdigest) == password
+            return {:error => false}
+        else
+            return {:error => true, :message => "That's not your current password."}
+        end
+    end
+      
+
     # Looking at the users current money
     #
     # @param [Integer] id, the id of the current user
@@ -172,7 +218,7 @@ require 'byebug'
     # @return [Integer] of the users money
         def account_money(id)
             db = connect_to_db('db/online-investor.db')
-            user_money = db.execute('SELECT money FROM users WHERE id = ?', user_id).first.first
+            user_money = db.execute('SELECT money FROM users WHERE id = ?', id).first.first
             return user_money
         end      
 
@@ -233,7 +279,6 @@ require 'byebug'
     def join_business(id, business_name)
         db = connect_to_db('db/online-investor.db')
         business_id = db.execute("SELECT id FROM businesses WHERE name = ?", business_name).first
-        p business_id
         if business_id != nil
             db.execute("INSERT INTO user_to_business (user_id, business_id) VALUES (?, ?)", id, business_id)
             session[:business_id] = db.execute("SELECT business_id FROM user_to_business WHERE user_id = ?", id).first.first
@@ -252,7 +297,7 @@ require 'byebug'
     # @see Model#connect_to_db
     def create_business(user_id, user_money, name, budget)
         db = connect_to_db('db/online-investor.db')
-        user_money -= starting_budget
+        user_money -= budget
         db.execute('UPDATE users SET money = ? WHERE id = ?', user_money, user_id)
 
         db.execute("INSERT INTO businesses (name, money) VALUES (?, ?)", name, budget)
@@ -269,7 +314,11 @@ require 'byebug'
     def delete_user(id)
         db = connect_to_db('db/online-investor.db')
         db.execute('DELETE FROM users WHERE id = ?', id)
+        db.execute('DELETE FROM user_to_business WHERE user_id = ?', id)
+        # db.execute('DELETE users, user_to_business # Attempt at deleting with inner join, also tried cascade but didn't find any good source that helped me solve it
+        # FROM (users
+        # INNER JOIN user_to_business ON users.id = user_to_business) WHERE users.id = ?', id)
         session[:id] = nil
         return
     end
-# end
+end

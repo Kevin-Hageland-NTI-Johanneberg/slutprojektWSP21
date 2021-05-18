@@ -7,11 +7,14 @@ require 'byebug'
 
 enable :sessions
 
-# include Model # why you not work huh
+include Model # why you not work huh
+
+# First login:
+first_login = true
 
 # Error messages:
 not_logged_in_error = "You need to be logged in to see this."
-wrong_password = "Wrong password. >:("
+wrong_password = "Wrong username or password. >:("
 not_matching = "Passwords didn't match!"
 data_error = "You've not entered the correct data, check if:\nYou've entered data in every field.\nEntered correct data type."
 not_enough_money = "You don't have that amount of money on your account."
@@ -19,6 +22,7 @@ business_not_found = "There's no business with this name."
 user_not_found = "There's no user with that name."
 already_admin = "The user is already an Admin."
 no_access = "You don't have access to this data."
+cooldown_error = "The cooldown login cooldown is not ready."
 
 before do
   if request.path_info != "/"  && request.path_info != "/register" && request.path_info != "/login" && request.path_info != "/browse" && request.path_info != "/error" && session[:id] == nil 
@@ -60,9 +64,29 @@ end
 post('/login') do
     username = params[:username]
     password = params[:password]
-    if logged_in?(username, password) == true
+    if first_login == true
+      session[:cooldown] = nil
+    end
+
+    login_response = logged_in?(username, password, first_login, session[:cooldown])
+    if login_response[:success] == true
+      if first_login == true
+        first_login = false
+      end
+      session[:cooldown] = login_response[:cooldown_timer]
       redirect('/browse/')
+    elsif login_response[:success] == "cooldown"
+      if first_login == true
+        first_login = false
+      end
+      session[:cooldown] = login_response[:cooldown_timer]
+      session[:error] = cooldown_error
+      redirect("/error")
     else
+      if first_login == true
+        first_login = false
+      end
+      session[:cooldown] = login_response[:cooldown_timer]
       session[:error] = wrong_password
       redirect("/error")
     end
@@ -102,7 +126,7 @@ end
 
 # Displays the businesses data of the current user
 #
-# @param [Integer] :id, the id of the business currently being hovered 
+# @param [Integer] :id, the id of the current user
 # @see Model#get_businesses_from_user
 get('/business/:id') do # if the user have 0 businesses, make it show another page
   id = params[:id].to_i
@@ -112,8 +136,10 @@ end
 
 # Displays the post creating page
 #
+# @param [Integer] :id, the id of the user
 # @params [Integer] business_id, the id of the business that wants to create a new post
 get('/create_post/:id/new') do
+  id = params[id].to_i
   business_id = params[:business_selected].to_i
   slim(:"posts/new", locals:{business_id:business_id})
 end
@@ -129,19 +155,20 @@ end
 # @see Model#create_post
 post('/create_post/:id/update') do # fix how picture works
   business_id = params[:id].to_i
+  user_id = session[:id]
   title = params[:title]
   picture = params[:picture]
   body = params[:body]
   money_offer = params[:money_offer].to_i
-  percent_offer = params[:percentage_offer].to_i
+  percent_offer = params[:percent_offer].to_i
 
-  if business_id == nil || title == nil || picture == nil || body == nil || money_offer == nil || percent_offer == nil || percent_offer.class == 0 || money_offer == 0
+  if business_id == nil || title == nil || picture == nil || body == nil || money_offer == nil || percent_offer == nil || percent_offer == 0 || money_offer == 0
     session[:error] = data_error
     redirect("/error")
   end
 
   create_post(business_id, title, picture, body, money_offer, percent_offer)
-  redirect('/business/:business_id')
+  redirect("/business/#{user_id}")
 end
 
 # Displays the current users profile
@@ -201,23 +228,32 @@ post('/change_username/:id/update') do
   id = session[:id].to_i
   new_username = params[:username]
   change_username(id, new_username)
-  redirect('/account/:id')
+  redirect("/account/#{id}")
 end
 
 # Allows the user to change its password and redirects back to the account tab
 #
 # @param [Integer] :id, id of the current user
 # @param [String] password, the new non-decrypted password of the user
-# @param [String] username, the new password confirmation of the user
+# @param [String] password_confirm, the new password confirmation of the user
+# @param [String] old_password, the old password entered by the user
+# @see Model#password_check
 # @see Model#change_password
 post('/change_password/:id/update') do
   id = params[:id].to_i
   password = params[:password]
   password_confirm = params[:password_confirm]
+  old_password = params[:old_password]
+  
+  result = password_check(id, old_password)
+  if result[:error] == true
+    session[:error] = result[:message]
+    redirect("/error")
+  end
 
   if password == password_confirm
     change_password(id, password)
-    redirect("/account/:id")
+    redirect("/account/#{id}")
   else 
     session[:error] = not_matching
     redirect("/error")
@@ -230,7 +266,7 @@ end
 # @param [Integer] money_to_add, the amount of money the user wants to add
 # @see Model#add_account_money
 post('/add_account_money/:id/update') do
-  id = session[:id].to_i
+  id = params[:id].to_i
   money_to_add = params[:money_to_add].to_i
 
   if money_to_add <= 0 || money_to_add == nil
@@ -239,7 +275,7 @@ post('/add_account_money/:id/update') do
   end
 
   add_account_money(id, money_to_add)
-  redirect('/account/:id')
+  redirect("/account/#{id}")
 end
 
 # Adds money to a selected business of the current user (while subtracting that amount from the users account balance) and redirects back to the account tab
@@ -261,7 +297,7 @@ post('/add_money/:id/update') do
     redirect("/error")
   elsif user_money > money_to_add
     add_account_money(id, money_to_add)
-    redirect("/account/:id")
+    redirect("/account/#{id}")
   else
     session[:error] = not_enough_money
     redirect("/error")
@@ -277,7 +313,7 @@ post('/leave/:id/delete') do
   id = params[:id].to_i
   user_id = session[:id]
   leave_business(user_id, id)
-  redirect('/account/:id')
+  redirect("/account/#{id}")
 end
 
 # Lets the user type in the name of a business to join that business and then redirects them back to their account
@@ -318,7 +354,7 @@ post('/create_business/:id/update') do
 
   if user_money > starting_budget
     create_business(id, user_money, business_name, starting_budget)
-    redirect('/account/:id')
+    redirect("/account/#{id}")
   else
     session[:error] = not_enough_money
     redirect("/error")
