@@ -5,7 +5,9 @@ require 'bcrypt'
 require './app.rb'
 require 'byebug'
 
-module Model
+
+
+# module Model
     
     # Retrieves the database
     #
@@ -321,4 +323,4 @@ module Model
         session[:id] = nil
         return
     end
-end
+# end

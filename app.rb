@@ -7,7 +7,7 @@ require 'byebug'
 
 enable :sessions
 
-include Model # why you not work huh
+# include Model # why you not work huh
 
 # First login:
 first_login = true
@@ -25,7 +25,7 @@ no_access = "You don't have access to this data."
 cooldown_error = "The cooldown login cooldown is not ready."
 
 before do
-  if request.path_info != "/"  && request.path_info != "/register" && request.path_info != "/login" && request.path_info != "/browse" && request.path_info != "/error" && session[:id] == nil 
+  if request.path_info != "/"  && request.path_info != "/register" && request.path_info != "/login" && request.path_info != "/browse/" && request.path_info != "/error" && session[:id] == nil 
     session[:error] = not_logged_in_error
     redirect("/error")
   end
