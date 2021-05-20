@@ -110,7 +110,7 @@ post('/register') do
   password_confirm = params[:password_confirm]
  
   if password == password_confirm
-    register_user(username, password)
+    register_user(username, password) # Missade felhantering här, enkel if-statement
     redirect("/browse/")
   else 
     session[:error] = not_matching
